@@ -1,0 +1,6 @@
+package: github.com/yanzay/govpn
+import:
+- package: golang.org/x/crypto
+  subpackages:
+  - ssh
+  - ssh/terminal
