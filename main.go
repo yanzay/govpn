@@ -11,12 +11,13 @@ import (
 )
 
 var (
-	user     = flag.String("user", "", "User name")
-	pk       = flag.String("pk", defaultKeyPath(), "Private key file")
-	host     = flag.String("host", "", "Host")
-	port     = flag.Int("port", 22, "Port")
-	vpnuser  = flag.String("vpn-user", "", "VPN user name")
-	password string
+	user       = flag.String("user", "", "User name")
+	pk         = flag.String("pk", defaultKeyPath(), "Private key file")
+	host       = flag.String("host", "", "Host")
+	port       = flag.Int("port", 22, "Port")
+	vpnuser    = flag.String("vpn-user", "", "VPN user name")
+	createUser = flag.Bool("create-user", false, "Create new VPN user")
+	password   string
 )
 
 func defaultKeyPath() string {
@@ -37,25 +38,27 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = client.Command("apt install docker.io -y")
-	if err != nil {
-		panic(err)
-	}
-	_, err = client.Commandf("docker run -v ovpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u udp://%s", *host)
-	if err != nil {
-		panic(err)
-	}
-	err = client.InteractiveCommand("docker run -v ovpn-data:/etc/openvpn --rm -i kylemanna/openvpn ovpn_initpki")
-	if err != nil {
-		panic(err)
-	}
-	_, err = client.Command("docker stop openvpn || true && docker rm openvpn || true")
-	if err != nil {
-		panic(err)
-	}
-	_, err = client.Command("docker run -v ovpn-data:/etc/openvpn -d --name openvpn -p 1194:1194/udp --cap-add=NET_ADMIN kylemanna/openvpn")
-	if err != nil {
-		panic(err)
+	if !*createUser {
+		_, err = client.Command("apt install docker.io -y")
+		if err != nil {
+			panic(err)
+		}
+		_, err = client.Commandf("docker run -v ovpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u udp://%s", *host)
+		if err != nil {
+			panic(err)
+		}
+		err = client.InteractiveCommand("docker run -v ovpn-data:/etc/openvpn --rm -i kylemanna/openvpn ovpn_initpki")
+		if err != nil {
+			panic(err)
+		}
+		_, err = client.Command("docker stop openvpn || true && docker rm openvpn || true")
+		if err != nil {
+			panic(err)
+		}
+		_, err = client.Command("docker run -v ovpn-data:/etc/openvpn -d --name openvpn -p 1194:1194/udp --cap-add=NET_ADMIN kylemanna/openvpn")
+		if err != nil {
+			panic(err)
+		}
 	}
 	err = client.InteractiveCommandf("docker run -v ovpn-data:/etc/openvpn --rm -i kylemanna/openvpn easyrsa build-client-full %s nopass", *vpnuser)
 	if err != nil {
